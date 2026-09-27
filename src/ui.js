@@ -1,5 +1,5 @@
-import { MELBOURNE, TIMEZONE, fetchForecast, hourKey } from './api.js?v=20260927220136';
-import { glowScore, describe, rating } from './score.js?v=20260927220136';
+import { MELBOURNE, TIMEZONE, fetchForecast, loadCachedForecast, hourKey } from './api.js?v=20260928010332';
+import { glowScore, describe, rating } from './score.js?v=20260928010332';
 
 const RING_CIRCUMFERENCE = 2 * Math.PI * 52;
 
@@ -131,7 +131,31 @@ function updateNext() {
   document.getElementById('next-countdown').textContent = formatCountdown(time - now);
 }
 
-async function load() {
+// Forecasts only change hourly, so a recent one is reused instead of refetched.
+const FRESH_MS = 10 * 60 * 1000;
+
+// Renders both cards; returns false if the forecast doesn't cover these times.
+function renderForecast(forecast) {
+  const riseKey = hourKey(times.sunrise);
+  const setKey = hourKey(times.sunset);
+  if (!forecast.city[riseKey] || !forecast.city[setKey]) return false;
+
+  renderEvent(cards.sunrise, {
+    time: times.sunrise,
+    local: forecast.city[riseKey],
+    horizon: forecast.east[riseKey],
+    horizonLabel: 'east',
+  });
+  renderEvent(cards.sunset, {
+    time: times.sunset,
+    local: forecast.city[setKey],
+    horizon: forecast.west[setKey],
+    horizonLabel: 'west',
+  });
+  return true;
+}
+
+async function load({ force = false } = {}) {
   const day = pickDay(new Date());
   document.getElementById('date').textContent = `${day.label} · ${dateFmt.format(day.date)}`;
 
@@ -140,6 +164,15 @@ async function load() {
   field(cards.sunset, 'time').textContent = timeFmt.format(times.sunset);
   updateNext();
 
+  // Show the last saved forecast straight away, then refresh it if it's getting old.
+  const cached = loadCachedForecast();
+  const showingCached = cached ? renderForecast(cached.forecast) : false;
+  if (showingCached) {
+    statusEl.classList.remove('error');
+    statusEl.textContent = `Updated ${timeFmt.format(new Date(cached.savedAt))}`;
+    if (!force && Date.now() - cached.savedAt < FRESH_MS) return;
+  }
+
   refreshBtn.classList.add('spinning');
   refreshBtn.disabled = true;
   statusEl.classList.remove('error');
@@ -147,25 +180,19 @@ async function load() {
 
   try {
     const forecast = await fetchForecast();
-    const riseKey = hourKey(times.sunrise);
-    const setKey = hourKey(times.sunset);
-
-    renderEvent(cards.sunrise, {
-      time: times.sunrise,
-      local: forecast.city[riseKey],
-      horizon: forecast.east[riseKey],
-      horizonLabel: 'east',
-    });
-    renderEvent(cards.sunset, {
-      time: times.sunset,
-      local: forecast.city[setKey],
-      horizon: forecast.west[setKey],
-      horizonLabel: 'west',
-    });
+    renderForecast(forecast);
     statusEl.textContent = `Updated ${timeFmt.format(new Date())}`;
   } catch (err) {
     console.error(err);
-    statusEl.textContent = 'Couldn’t load the forecast. Check your connection and try again.';
+    if (showingCached) {
+      statusEl.textContent = `Couldn’t refresh — showing forecast from ${timeFmt.format(new Date(cached.savedAt))}`;
+    } else {
+      statusEl.textContent = 'Couldn’t load the forecast. Check your connection and try again.';
+      for (const card of Object.values(cards)) {
+        card.classList.remove('is-loading');
+        field(card, 'summary').textContent = 'Forecast unavailable right now.';
+      }
+    }
     statusEl.classList.add('error');
   } finally {
     refreshBtn.classList.remove('spinning');
@@ -173,7 +200,7 @@ async function load() {
   }
 }
 
-refreshBtn.addEventListener('click', load);
+refreshBtn.addEventListener('click', () => load({ force: true }));
 
 // Refresh when the app comes back to the foreground (e.g. reopened from the home screen).
 document.addEventListener('visibilitychange', () => {

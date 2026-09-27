@@ -37,7 +37,30 @@ export async function fetchForecast() {
   const data = await res.json();
 
   const names = Object.keys(LOCATIONS);
-  return Object.fromEntries(names.map((name, i) => [name, indexByHour(data[i].hourly)]));
+  const forecast = Object.fromEntries(names.map((name, i) => [name, indexByHour(data[i].hourly)]));
+  saveCachedForecast(forecast);
+  return forecast;
+}
+
+// The last forecast is kept on the device so the app can show it instantly on open.
+const CACHE_KEY = 'glow-forecast-v1';
+
+// Returns { forecast, savedAt } or null. Storage can be unavailable (e.g. private browsing).
+export function loadCachedForecast() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
+    return cached?.forecast && cached.savedAt ? cached : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveCachedForecast(forecast) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ forecast, savedAt: Date.now() }));
+  } catch {
+    // Not critical: the app just won't have an instant forecast next time.
+  }
 }
 
 function indexByHour(hourly) {

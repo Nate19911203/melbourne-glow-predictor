@@ -13,7 +13,10 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="style.css?v=20260927220136">
+  <link rel="preconnect" href="https://api.open-meteo.com" crossorigin>
+  <link rel="modulepreload" href="src/api.js?v=20260928010332">
+  <link rel="modulepreload" href="src/score.js?v=20260928010332">
+  <link rel="stylesheet" href="style.css?v=20260928010332">
 </head>
 <body>
   <div class="sky" aria-hidden="true"></div>
@@ -118,6 +121,6 @@
   </main>
 
   <script src="src/vendor/suncalc.js"></script>
-  <script type="module" src="src/ui.js?v=20260927220136"></script>
+  <script type="module" src="src/ui.js?v=20260928010332"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
-import { MELBOURNE, TIMEZONE, fetchForecast, loadCachedForecast, hourKey } from './api.js?v=20260928013706';
-import { glowScore, describe, rating } from './score.js?v=20260928013706';
+import { MELBOURNE, TIMEZONE, fetchForecast, loadCachedForecast, hourKey } from './api.js?v=20260928014149';
+import { glowScore, describe, rating } from './score.js?v=20260928014149';
 
 const RING_CIRCUMFERENCE = 2 * Math.PI * 52;
 
@@ -208,3 +208,14 @@ document.addEventListener('visibilitychange', () => {
 setInterval(updateNext, 30_000);
 
 load();
+
+// TEMPORARY diagnostic for the iPad launch zoom: shows what the page itself sees.
+const debugEl = document.getElementById('debug');
+const DEBUG_VERSION = new URL(import.meta.url).searchParams.get('v') ?? 'dev';
+function showDebug() {
+  const scale = window.visualViewport ? window.visualViewport.scale.toFixed(2) : '?';
+  debugEl.textContent = `v${DEBUG_VERSION.slice(-6)} · zoom ${scale} · ${innerWidth}×${innerHeight}`;
+}
+showDebug();
+window.visualViewport?.addEventListener('resize', showDebug);
+addEventListener('resize', showDebug);

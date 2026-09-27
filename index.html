@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0e1022">
+  <meta name="theme-color" content="#1d2442" id="theme-color">
   <meta name="color-scheme" content="dark">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -13,19 +13,16 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..600&display=swap">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="sky" aria-hidden="true"></div>
-
   <main class="app">
     <header class="topbar">
       <div>
-        <p class="eyebrow">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg>
-          Melbourne
-        </p>
-        <h1>Glow Forecast</h1>
+        <h1>Melbourne glow</h1>
         <p class="date" id="date"></p>
       </div>
       <button class="icon-btn" id="refresh" type="button" aria-label="Refresh forecast">
@@ -33,86 +30,43 @@
       </button>
     </header>
 
-    <section class="next" id="next" hidden>
-      <span class="next-label" id="next-label"></span>
-      <span class="next-countdown" id="next-countdown"></span>
+    <section class="hero" aria-live="polite">
+      <svg class="scene" id="scene" role="img" aria-label="Illustration of the horizon"></svg>
+      <div class="hero-copy">
+        <p class="hero-when" id="hero-when">&nbsp;</p>
+        <p class="hero-score"><span id="hero-score">--</span><span class="pct">%</span></p>
+        <p class="hero-rating" id="hero-rating">&nbsp;</p>
+        <p class="hero-summary" id="hero-summary">Loading forecast…</p>
+      </div>
     </section>
 
-    <section class="cards">
-      <article class="card is-loading" id="sunrise">
-        <header class="card-head">
-          <div class="event">
-            <svg class="event-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18h16M7 14a5 5 0 0 1 10 0M12 3v5m-3-2 3-3 3 3M4.2 9.2l1.4 1.4m12.8 0 1.4-1.4"/></svg>
-            <div>
-              <h2>Sunrise</h2>
-              <span class="time" data-field="time">--:--</span>
-            </div>
-          </div>
-          <span class="chip" data-field="rating">—</span>
-        </header>
+    <nav class="switch" role="tablist" aria-label="Choose event">
+      <button role="tab" type="button" data-event="sunrise">
+        <span class="swatch"></span>
+        <span class="switch-text">
+          <span class="switch-name">Sunrise</span>
+          <span class="switch-time">--:--</span>
+        </span>
+        <span class="switch-score">--</span>
+      </button>
+      <button role="tab" type="button" data-event="sunset">
+        <span class="swatch"></span>
+        <span class="switch-text">
+          <span class="switch-name">Sunset</span>
+          <span class="switch-time">--:--</span>
+        </span>
+        <span class="switch-score">--</span>
+      </button>
+    </nav>
 
-        <div class="gauge-row">
-          <div class="gauge">
-            <svg viewBox="0 0 120 120" aria-hidden="true">
-              <defs>
-                <linearGradient id="grad-sunrise" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0" stop-color="#ffd27a"/>
-                  <stop offset="1" stop-color="#ff8a5c"/>
-                </linearGradient>
-              </defs>
-              <circle class="gauge-track" cx="60" cy="60" r="52"/>
-              <circle class="gauge-fill" data-field="ring" cx="60" cy="60" r="52" stroke="url(#grad-sunrise)"/>
-            </svg>
-            <div class="gauge-label">
-              <span class="gauge-value" data-field="score">--</span>
-              <span class="gauge-unit">glow chance</span>
-            </div>
-          </div>
-          <p class="summary" data-field="summary">Loading forecast…</p>
-        </div>
-
-        <ul class="factors" data-field="factors"></ul>
-      </article>
-
-      <article class="card is-loading" id="sunset">
-        <header class="card-head">
-          <div class="event">
-            <svg class="event-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18h16M7 14a5 5 0 0 1 10 0M12 8V3m-3 2 3 3 3-3M4.2 9.2l1.4 1.4m12.8 0 1.4-1.4"/></svg>
-            <div>
-              <h2>Sunset</h2>
-              <span class="time" data-field="time">--:--</span>
-            </div>
-          </div>
-          <span class="chip" data-field="rating">—</span>
-        </header>
-
-        <div class="gauge-row">
-          <div class="gauge">
-            <svg viewBox="0 0 120 120" aria-hidden="true">
-              <defs>
-                <linearGradient id="grad-sunset" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0" stop-color="#ff9a76"/>
-                  <stop offset="1" stop-color="#c86bd6"/>
-                </linearGradient>
-              </defs>
-              <circle class="gauge-track" cx="60" cy="60" r="52"/>
-              <circle class="gauge-fill" data-field="ring" cx="60" cy="60" r="52" stroke="url(#grad-sunset)"/>
-            </svg>
-            <div class="gauge-label">
-              <span class="gauge-value" data-field="score">--</span>
-              <span class="gauge-unit">glow chance</span>
-            </div>
-          </div>
-          <p class="summary" data-field="summary">Loading forecast…</p>
-        </div>
-
-        <ul class="factors" data-field="factors"></ul>
-      </article>
+    <section class="briefing">
+      <h2 id="briefing-title">Conditions</h2>
+      <dl class="stats" id="stats"></dl>
     </section>
 
     <footer class="footer">
       <span id="status"></span>
-      <span>Data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a></span>
+      <span>Data from <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a></span>
     </footer>
   </main>
 

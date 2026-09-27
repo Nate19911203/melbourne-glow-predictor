@@ -16,3 +16,8 @@ python3 -m http.server 8000
 ```
 
 Then open http://localhost:8000 (or `http://<your-mac-ip>:8000` from an iPad on the same network).
+
+## Deploying
+
+Pushing to `main` publishes to GitHub Pages. Run `./scripts/bump-version.sh` before committing
+CSS/JS changes so browsers and the iPad home-screen app pick up the new files instead of cached ones.

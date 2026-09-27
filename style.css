@@ -47,14 +47,13 @@ body {
     max(20px, env(safe-area-inset-left));
 }
 
-/* Background photo, faded in by setPhotoStrength() in ui.js */
+/* Background photo */
 .photo {
   position: fixed;
   inset: 0;
   z-index: -1;
-  opacity: 0;
+  opacity: 0.9;
   background: url("photos/pink-sea-1600.jpg") center 62% / cover no-repeat;
-  transition: opacity 1.5s ease;
 }
 
 /* Darken the photo so white text stays readable on the pale sky. */

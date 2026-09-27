@@ -9,9 +9,12 @@ const WEIGHTS = {
 
 const clamp01 = (x) => Math.min(1, Math.max(0, x));
 
+function combinedCover(mid, high) {
+  return 100 * (1 - (1 - mid / 100) * (1 - high / 100));
+}
+
 // Mid/high cloud: ideal between 30% and 70%, falling off linearly to 0 at 0% and 100%.
-function canvasScore(mid, high) {
-  const cover = 100 * (1 - (1 - mid / 100) * (1 - high / 100)); // combined coverage
+function canvasScore(cover) {
   if (cover < 30) return cover / 30;
   if (cover > 70) return (100 - cover) / 30;
   return 1;
@@ -34,29 +37,38 @@ function humidityScore(rh) {
 }
 
 export function glowScore(local, horizon) {
+  const cover = combinedCover(local.mid, local.high);
   const parts = {
-    canvas: canvasScore(local.mid, local.high),
+    canvas: canvasScore(cover),
     horizon: horizonScore(local.low, horizon.low),
     visibility: visibilityScore(local.visibility),
     humidity: humidityScore(local.humidity),
   };
   let score = Object.entries(WEIGHTS).reduce((sum, [k, w]) => sum + w * parts[k], 0);
 
-  // Without any canvas there's nothing to glow, no matter how clear the rest is.
-  score *= 0.4 + 0.6 * parts.canvas;
+  // Without a canvas there's nothing to glow, and a blocked horizon stops the light
+  // reaching it — either one caps the score no matter how good the rest is.
+  score *= (0.4 + 0.6 * parts.canvas) * (0.4 + 0.6 * parts.horizon);
 
-  return { score: Math.round(score * 100), parts };
+  return { score: Math.round(score * 100), parts, cover };
 }
 
-export function describe({ score, parts }) {
-  if (parts.canvas < 0.3 && parts.horizon > 0.6) {
-    return 'Skies are too clear — pretty colours, but little cloud to light up.';
-  }
+export function rating(score) {
+  if (score >= 70) return 'Excellent';
+  if (score >= 50) return 'Good';
+  if (score >= 30) return 'Fair';
+  return 'Poor';
+}
+
+export function describe({ score, parts, cover }) {
   if (parts.horizon < 0.35) {
     return 'Thick low cloud on the horizon is likely to block the light.';
   }
+  if (parts.canvas < 0.3 && cover < 30) {
+    return 'Skies are too clear — pretty colours, but little cloud to light up.';
+  }
   if (parts.canvas < 0.3) {
-    return 'Heavy overcast — the sun probably won’t break through.';
+    return 'Cloud cover is too thick — the light may struggle to get underneath.';
   }
   if (score >= 70) return 'Cloud conditions look great — well worth heading out.';
   if (score >= 50) return 'Cloud conditions look good, worth watching.';

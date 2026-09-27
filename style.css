@@ -1,6 +1,6 @@
 :root {
   --bg: #0e1022;
-  --glass: rgba(255, 255, 255, 0.06);
+  --glass: rgba(24, 20, 48, 0.42);
   --glass-border: rgba(255, 255, 255, 0.1);
   --text: #f5f3f0;
   --muted: rgba(245, 243, 240, 0.6);
@@ -52,7 +52,6 @@ body {
   position: fixed;
   inset: 0;
   z-index: -1;
-  opacity: 0.9;
   background: url("photos/pink-sea-1600.jpg") center 62% / cover no-repeat;
 }
 
@@ -61,11 +60,16 @@ body {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(14, 16, 34, 0.55) 0%, rgba(14, 16, 34, 0.3) 45%, rgba(14, 16, 34, 0.65) 100%);
+  background: linear-gradient(180deg, rgba(14, 16, 34, 0.35) 0%, rgba(14, 16, 34, 0.05) 45%, rgba(14, 16, 34, 0.3) 100%);
 }
 
 @media (max-width: 700px) {
   .photo { background-image: url("photos/pink-sea-900.jpg"); }
+}
+
+/* Text sitting directly on the photo */
+.topbar, .footer {
+  text-shadow: 0 1px 10px rgba(20, 16, 40, 0.5);
 }
 
 /* Top bar */
@@ -99,7 +103,7 @@ h1 {
 
 .date {
   margin: 4px 0 0;
-  color: var(--muted);
+  color: rgba(245, 243, 240, 0.88);
 }
 
 .icon-btn {
@@ -399,7 +403,7 @@ h1 {
   gap: 8px;
   margin-top: 24px;
   font-size: 0.78rem;
-  color: var(--muted);
+  color: rgba(245, 243, 240, 0.85);
 }
 
 .footer a { color: inherit; }

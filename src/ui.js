@@ -1,7 +1,7 @@
 import { MELBOURNE, TIMEZONE, fetchForecast, hourKey } from './api.js';
 import { glowScore, describe, rating } from './score.js';
-import { paletteFor, applyPalette } from './palette.js';
-import { drawScene, sunBearing } from './scene.js';
+
+const RING_CIRCUMFERENCE = 2 * Math.PI * 52;
 
 const timeFmt = new Intl.DateTimeFormat('en-AU', {
   timeZone: TIMEZONE, hour: 'numeric', minute: '2-digit',
@@ -10,45 +10,67 @@ const dateFmt = new Intl.DateTimeFormat('en-AU', {
   timeZone: TIMEZONE, weekday: 'long', day: 'numeric', month: 'long',
 });
 
-const $ = (id) => document.getElementById(id);
-const scene = $('scene');
-const statusEl = $('status');
-const refreshBtn = $('refresh');
-const tabs = [...document.querySelectorAll('.switch [role="tab"]')];
-
-// Score used for colours before any forecast has loaded.
-const NEUTRAL_SCORE = 25;
-
-const EVENTS = {
-  sunrise: { name: 'Sunrise', facing: 90, horizonKey: 'east' },
-  sunset: { name: 'Sunset', facing: 270, horizonKey: 'west' },
+const cards = {
+  sunrise: document.getElementById('sunrise'),
+  sunset: document.getElementById('sunset'),
 };
+const statusEl = document.getElementById('status');
+const refreshBtn = document.getElementById('refresh');
+const nextEl = document.getElementById('next');
 
-const state = { day: null, forecast: null, events: {}, selected: null, message: 'Loading forecast…' };
+let times = null;
 
-// Once today's sunset has passed, switch to tomorrow's sunrise and sunset.
-function pickDay(now) {
-  const today = SunCalc.getTimes(now, MELBOURNE.lat, MELBOURNE.lon);
-  if (now < today.sunset) return { times: today, label: 'Today', date: now };
-  const tomorrow = new Date(now.getTime() + 86_400_000);
-  return { times: SunCalc.getTimes(tomorrow, MELBOURNE.lat, MELBOURNE.lon), label: 'Tomorrow', date: tomorrow };
+function field(card, name) {
+  return card.querySelector(`[data-field="${name}"]`);
 }
 
-function buildEvents() {
-  for (const [id, cfg] of Object.entries(EVENTS)) {
-    const time = state.day.times[id];
-    const key = hourKey(time);
-    const local = state.forecast?.city[key];
-    const horizon = state.forecast?.[cfg.horizonKey][key];
-    state.events[id] = {
-      ...cfg,
-      time,
-      local,
-      horizon,
-      result: local && horizon ? glowScore(local, horizon) : null,
-      bearing: sunBearing(time, MELBOURNE.lat, MELBOURNE.lon),
-    };
+function setScore(card, score) {
+  field(card, 'score').textContent = score;
+  field(card, 'ring').style.strokeDashoffset = RING_CIRCUMFERENCE * (1 - score / 100);
+  const label = rating(score);
+  const chip = field(card, 'rating');
+  chip.textContent = label;
+  chip.dataset.rating = label.toLowerCase();
+}
+
+function renderFactors(card, local, horizon, horizonLabel, parts) {
+  const rows = [
+    ['Mid / high cloud', `${local.mid}% / ${local.high}%`, parts.canvas],
+    [`Low cloud, ${horizonLabel}`, `${horizon.low}%`, parts.horizon],
+    ['Visibility', `${(local.visibility / 1000).toFixed(0)} km`, parts.visibility],
+    ['Humidity', `${local.humidity}%`, parts.humidity],
+  ];
+  const list = field(card, 'factors');
+  list.innerHTML = rows.map(([name, value]) => `
+    <li>
+      <div class="factor-top">
+        <span class="factor-name">${name}</span>
+        <span class="factor-value">${value}</span>
+      </div>
+      <div class="factor-bar"><span></span></div>
+    </li>`).join('');
+
+  // Set widths on the next frame so the bars animate in.
+  requestAnimationFrame(() => {
+    list.querySelectorAll('.factor-bar span').forEach((bar, i) => {
+      bar.style.width = `${Math.round(rows[i][2] * 100)}%`;
+    });
+  });
+}
+
+function renderEvent(card, { time, local, horizon, horizonLabel }) {
+  field(card, 'time').textContent = timeFmt.format(time);
+  card.classList.remove('is-loading');
+
+  if (!local || !horizon) {
+    field(card, 'summary').textContent = 'No forecast available for this time.';
+    return;
   }
+
+  const result = glowScore(local, horizon);
+  setScore(card, result.score);
+  field(card, 'summary').textContent = describe(result);
+  renderFactors(card, local, horizon, horizonLabel, result.parts);
 }
 
 function formatCountdown(ms) {
@@ -58,109 +80,38 @@ function formatCountdown(ms) {
   return h ? `in ${h}h ${m}m` : `in ${m}m`;
 }
 
-function whenText(ev) {
-  const day = state.day.label === 'Today' ? 'Today’s' : 'Tomorrow’s';
-  const diff = ev.time - Date.now();
-  return `${day} ${ev.name.toLowerCase()} · ${timeFmt.format(ev.time)} · ${diff > 0 ? formatCountdown(diff) : 'passed'}`;
+// Once today's sunset has passed, switch to tomorrow's sunrise and sunset.
+function pickDay(now) {
+  const today = SunCalc.getTimes(now, MELBOURNE.lat, MELBOURNE.lon);
+  if (now < today.sunset) return { times: today, label: 'Today', date: now };
+  const tomorrow = new Date(now.getTime() + 86_400_000);
+  return { times: SunCalc.getTimes(tomorrow, MELBOURNE.lat, MELBOURNE.lon), label: 'Tomorrow', date: tomorrow };
 }
 
-function quality(part) {
-  if (part >= 0.7) return 'good';
-  if (part >= 0.4) return 'ok';
-  return 'bad';
-}
-
-function statsFor({ local, horizon, horizonKey, result }) {
-  const { cover, parts } = result;
-  const km = local.visibility / 1000;
-  return [
-    {
-      label: 'Mid & high cloud',
-      value: `${Math.round(cover)}%`,
-      note: cover < 30 ? 'Too thin' : cover > 70 ? 'Too thick' : 'In the sweet spot',
-      q: quality(parts.canvas),
-    },
-    {
-      label: `Low cloud to the ${horizonKey}`,
-      value: `${horizon.low}%`,
-      note: horizon.low < 20 ? 'Clear horizon' : horizon.low < 50 ? 'Patchy' : 'Blocked',
-      q: quality(parts.horizon),
-    },
-    {
-      label: 'Visibility',
-      value: `${Math.round(km)} km`,
-      note: km >= 20 ? 'Crisp' : km >= 10 ? 'Fair' : 'Hazy',
-      q: quality(parts.visibility),
-    },
-    {
-      label: 'Humidity',
-      value: `${local.humidity}%`,
-      note: local.humidity <= 60 ? 'Dry air' : local.humidity <= 80 ? 'Moderate' : 'Humid',
-      q: quality(parts.humidity),
-    },
-  ];
-}
-
-function drawSelectedScene() {
-  const ev = state.events[state.selected];
-  if (!ev) return;
-  const { width, height } = scene.getBoundingClientRect();
-  drawScene(scene, {
-    width,
-    height,
-    bearing: ev.bearing,
-    facing: ev.facing,
-    cover: ev.result?.cover ?? 0,
-    lowCloud: ev.horizon?.low ?? 0,
-  });
-  scene.setAttribute('aria-label', `The ${ev.horizonKey}ern horizon at ${ev.name.toLowerCase()}`);
-}
-
-function render() {
-  const ev = state.events[state.selected];
-  const palette = paletteFor(ev.result?.score ?? NEUTRAL_SCORE);
-  applyPalette(document.documentElement, palette);
-  $('theme-color').content = palette.top;
-
-  $('hero-when').textContent = whenText(ev);
-  $('hero-score').textContent = ev.result ? ev.result.score : '--';
-  $('hero-rating').textContent = ev.result ? `${rating(ev.result.score)} glow potential` : ' ';
-  $('hero-summary').textContent = ev.result ? describe(ev.result) : state.message;
-  drawSelectedScene();
-
-  for (const tab of tabs) {
-    const other = state.events[tab.dataset.event];
-    const p = paletteFor(other.result?.score ?? NEUTRAL_SCORE);
-    tab.setAttribute('aria-selected', String(tab.dataset.event === state.selected));
-    tab.querySelector('.swatch').style.background = `linear-gradient(180deg, ${p.top}, ${p.mid} 55%, ${p.horizon})`;
-    tab.querySelector('.switch-time').textContent = timeFmt.format(other.time);
-    tab.querySelector('.switch-score').textContent = other.result ? other.result.score : '--';
+// Highlights the upcoming event and dims the one already passed.
+function updateNext() {
+  if (!times) return;
+  const now = Date.now();
+  if (now > times.sunset) {
+    load();
+    return;
   }
+  cards.sunrise.classList.toggle('is-past', now > times.sunrise);
 
-  $('briefing-title').textContent = `Conditions at ${ev.name.toLowerCase()}`;
-  $('stats').innerHTML = ev.result
-    ? statsFor(ev).map((s) => `
-      <div class="stat" data-q="${s.q}">
-        <dt>${s.label}</dt>
-        <dd class="stat-value">${s.value}</dd>
-        <dd class="stat-note">${s.note}</dd>
-      </div>`).join('')
-    : '';
+  const [name, time] = now < times.sunrise ? ['Sunrise', times.sunrise] : ['Sunset', times.sunset];
+  nextEl.hidden = false;
+  document.getElementById('next-label').textContent = `Next · ${name}`;
+  document.getElementById('next-countdown').textContent = formatCountdown(time - now);
 }
 
 async function load() {
   const day = pickDay(new Date());
-  const dayChanged = !state.day || dateFmt.format(state.day.date) !== dateFmt.format(day.date);
-  state.day = day;
-  $('date').textContent = `${day.label} · ${dateFmt.format(day.date)}`;
+  document.getElementById('date').textContent = `${day.label} · ${dateFmt.format(day.date)}`;
 
-  if (dayChanged) {
-    state.selected = Date.now() < day.times.sunrise ? 'sunrise' : 'sunset';
-    state.forecast = null;
-    state.message = 'Loading forecast…';
-  }
-  buildEvents();
-  render();
+  times = day.times;
+  field(cards.sunrise, 'time').textContent = timeFmt.format(times.sunrise);
+  field(cards.sunset, 'time').textContent = timeFmt.format(times.sunset);
+  updateNext();
 
   refreshBtn.classList.add('spinning');
   refreshBtn.disabled = true;
@@ -168,38 +119,31 @@ async function load() {
   statusEl.textContent = 'Updating…';
 
   try {
-    state.forecast = await fetchForecast();
-    state.message = 'No forecast available for this time.';
-    buildEvents();
-    render();
+    const forecast = await fetchForecast();
+    const riseKey = hourKey(times.sunrise);
+    const setKey = hourKey(times.sunset);
+
+    renderEvent(cards.sunrise, {
+      time: times.sunrise,
+      local: forecast.city[riseKey],
+      horizon: forecast.east[riseKey],
+      horizonLabel: 'east',
+    });
+    renderEvent(cards.sunset, {
+      time: times.sunset,
+      local: forecast.city[setKey],
+      horizon: forecast.west[setKey],
+      horizonLabel: 'west',
+    });
     statusEl.textContent = `Updated ${timeFmt.format(new Date())}`;
   } catch (err) {
     console.error(err);
-    state.message = 'Couldn’t load the forecast.';
-    render();
     statusEl.textContent = 'Couldn’t load the forecast. Check your connection and try again.';
     statusEl.classList.add('error');
   } finally {
     refreshBtn.classList.remove('spinning');
     refreshBtn.disabled = false;
   }
-}
-
-// Keeps the countdown current and rolls over to tomorrow after sunset.
-function tick() {
-  if (!state.day) return;
-  if (Date.now() > state.day.times.sunset) {
-    load();
-    return;
-  }
-  $('hero-when').textContent = whenText(state.events[state.selected]);
-}
-
-for (const tab of tabs) {
-  tab.addEventListener('click', () => {
-    state.selected = tab.dataset.event;
-    render();
-  });
 }
 
 refreshBtn.addEventListener('click', load);
@@ -209,7 +153,6 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') load();
 });
 
-new ResizeObserver(drawSelectedScene).observe(scene);
-setInterval(tick, 30_000);
+setInterval(updateNext, 30_000);
 
 load();

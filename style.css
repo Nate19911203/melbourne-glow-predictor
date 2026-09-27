@@ -1,6 +1,6 @@
 :root {
   --bg: #0e1022;
-  --glass: rgba(24, 20, 48, 0.42);
+  --glass: rgba(24, 20, 48, 0.3);
   --glass-border: rgba(255, 255, 255, 0.1);
   --text: #f5f3f0;
   --muted: rgba(245, 243, 240, 0.6);
@@ -169,8 +169,9 @@ h1 {
   border-radius: var(--radius);
   background: var(--glass);
   border: 1px solid var(--glass-border);
-  -webkit-backdrop-filter: blur(24px);
-  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  text-shadow: 0 1px 6px rgba(20, 16, 40, 0.45);
   transition: opacity 0.3s ease;
 }
 

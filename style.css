@@ -68,10 +68,6 @@ body {
   text-shadow: 0 1px 10px rgba(20, 16, 40, 0.5);
 }
 
-/* Hidden while iPadOS settles the launch width (see the inline script in index.html). */
-.app { transition: opacity 0.2s ease; }
-.settling .app { opacity: 0; transition: none; }
-
 /* Top bar */
 .topbar {
   display: flex;

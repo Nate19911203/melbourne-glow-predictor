@@ -17,6 +17,7 @@ const cards = {
 const statusEl = document.getElementById('status');
 const refreshBtn = document.getElementById('refresh');
 const nextEl = document.getElementById('next');
+const photoEl = document.getElementById('photo');
 
 let times = null;
 
@@ -91,13 +92,23 @@ function renderEvent(card, { time, local, horizon, horizonLabel }) {
 
   if (!local || !horizon) {
     field(card, 'summary').textContent = 'No forecast available for this time.';
-    return;
+    return null;
   }
 
   const result = glowScore(local, horizon);
   setScore(card, result.score);
   field(card, 'summary').textContent = describe(result);
   renderFactors(card, local, horizon, horizonLabel, result);
+  return result.score;
+}
+
+// The background photo shows through more as the next event's glow chance rises:
+// hidden below 30%, faint up to 60%, clearly visible above that.
+function setPhotoStrength(score) {
+  let strength = 0;
+  if (score >= 60) strength = 0.55 + Math.min(1, (score - 60) / 30) * 0.35;
+  else if (score >= 30) strength = 0.25 + ((score - 30) / 30) * 0.3;
+  photoEl.style.opacity = strength.toFixed(2);
 }
 
 function formatCountdown(ms) {
@@ -150,18 +161,19 @@ async function load() {
     const riseKey = hourKey(times.sunrise);
     const setKey = hourKey(times.sunset);
 
-    renderEvent(cards.sunrise, {
+    const sunriseScore = renderEvent(cards.sunrise, {
       time: times.sunrise,
       local: forecast.city[riseKey],
       horizon: forecast.east[riseKey],
       horizonLabel: 'east',
     });
-    renderEvent(cards.sunset, {
+    const sunsetScore = renderEvent(cards.sunset, {
       time: times.sunset,
       local: forecast.city[setKey],
       horizon: forecast.west[setKey],
       horizonLabel: 'west',
     });
+    setPhotoStrength((Date.now() < times.sunrise ? sunriseScore : sunsetScore) ?? 0);
     statusEl.textContent = `Updated ${timeFmt.format(new Date())}`;
   } catch (err) {
     console.error(err);

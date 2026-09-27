@@ -30,7 +30,7 @@ body {
 .sky {
   position: fixed;
   inset: 0;
-  z-index: -1;
+  z-index: -2;
   background:
     radial-gradient(120% 60% at 15% -10%, rgba(255, 150, 90, 0.28), transparent 60%),
     radial-gradient(90% 50% at 100% 0%, rgba(200, 107, 214, 0.22), transparent 60%),
@@ -45,6 +45,28 @@ body {
     max(20px, env(safe-area-inset-right))
     calc(env(safe-area-inset-bottom) + 24px)
     max(20px, env(safe-area-inset-left));
+}
+
+/* Background photo, faded in by setPhotoStrength() in ui.js */
+.photo {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  opacity: 0;
+  background: url("photos/pink-sea-1600.jpg") center 62% / cover no-repeat;
+  transition: opacity 1.5s ease;
+}
+
+/* Darken the photo so white text stays readable on the pale sky. */
+.photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(14, 16, 34, 0.55) 0%, rgba(14, 16, 34, 0.3) 45%, rgba(14, 16, 34, 0.65) 100%);
+}
+
+@media (max-width: 700px) {
+  .photo { background-image: url("photos/pink-sea-900.jpg"); }
 }
 
 /* Top bar */

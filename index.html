@@ -14,9 +14,9 @@
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="preconnect" href="https://api.open-meteo.com" crossorigin>
-  <link rel="modulepreload" href="src/api.js?v=20260928010332">
-  <link rel="modulepreload" href="src/score.js?v=20260928010332">
-  <link rel="stylesheet" href="style.css?v=20260928010332">
+  <link rel="modulepreload" href="src/api.js?v=20260928012023">
+  <link rel="modulepreload" href="src/score.js?v=20260928012023">
+  <link rel="stylesheet" href="style.css?v=20260928012023">
 </head>
 <body>
   <div class="sky" aria-hidden="true"></div>
@@ -30,16 +30,16 @@
           Melbourne
         </p>
         <h1>Glow Forecast</h1>
-        <p class="date" id="date"></p>
+        <p class="date" id="date">&nbsp;</p>
       </div>
       <button class="icon-btn" id="refresh" type="button" aria-label="Refresh forecast">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5"/></svg>
       </button>
     </header>
 
-    <section class="next" id="next" hidden>
-      <span class="next-label" id="next-label"></span>
-      <span class="next-countdown" id="next-countdown"></span>
+    <section class="next" id="next">
+      <span class="next-label" id="next-label">Next</span>
+      <span class="next-countdown" id="next-countdown">—</span>
     </section>
 
     <section class="cards">
@@ -75,7 +75,30 @@
           <p class="summary" data-field="summary">Loading forecast…</p>
         </div>
 
-        <ul class="factors" data-field="factors"></ul>
+        <ul class="factors" data-field="factors">
+          <li class="factor">
+            <span class="factor-name">Mid / high cloud</span>
+            <span class="factor-value">—</span>
+            <span class="factor-verdict">—</span>
+            <div class="range" aria-hidden="true"><span class="range-zone"></span></div>
+            <div class="range-scale" aria-hidden="true"><span>0%</span><span>sweet spot</span><span>100%</span></div>
+          </li>
+          <li class="factor">
+            <span class="factor-name">Low cloud, east</span>
+            <span class="factor-value">—</span>
+            <span class="factor-verdict">—</span>
+          </li>
+          <li class="factor">
+            <span class="factor-name">Visibility</span>
+            <span class="factor-value">—</span>
+            <span class="factor-verdict">—</span>
+          </li>
+          <li class="factor">
+            <span class="factor-name">Humidity</span>
+            <span class="factor-value">—</span>
+            <span class="factor-verdict">—</span>
+          </li>
+        </ul>
       </article>
 
       <article class="card is-loading" id="sunset">
@@ -110,7 +133,30 @@
           <p class="summary" data-field="summary">Loading forecast…</p>
         </div>
 
-        <ul class="factors" data-field="factors"></ul>
+        <ul class="factors" data-field="factors">
+          <li class="factor">
+            <span class="factor-name">Mid / high cloud</span>
+            <span class="factor-value">—</span>
+            <span class="factor-verdict">—</span>
+            <div class="range" aria-hidden="true"><span class="range-zone"></span></div>
+            <div class="range-scale" aria-hidden="true"><span>0%</span><span>sweet spot</span><span>100%</span></div>
+          </li>
+          <li class="factor">
+            <span class="factor-name">Low cloud, west</span>
+            <span class="factor-value">—</span>
+            <span class="factor-verdict">—</span>
+          </li>
+          <li class="factor">
+            <span class="factor-name">Visibility</span>
+            <span class="factor-value">—</span>
+            <span class="factor-verdict">—</span>
+          </li>
+          <li class="factor">
+            <span class="factor-name">Humidity</span>
+            <span class="factor-value">—</span>
+            <span class="factor-verdict">—</span>
+          </li>
+        </ul>
       </article>
     </section>
 
@@ -121,6 +167,6 @@
   </main>
 
   <script src="src/vendor/suncalc.js"></script>
-  <script type="module" src="src/ui.js?v=20260928010332"></script>
+  <script type="module" src="src/ui.js?v=20260928012023"></script>
 </body>
 </html>

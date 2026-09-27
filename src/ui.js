@@ -1,5 +1,5 @@
-import { MELBOURNE, TIMEZONE, fetchForecast, loadCachedForecast, hourKey } from './api.js?v=20260928010332';
-import { glowScore, describe, rating } from './score.js?v=20260928010332';
+import { MELBOURNE, TIMEZONE, fetchForecast, loadCachedForecast, hourKey } from './api.js?v=20260928012023';
+import { glowScore, describe, rating } from './score.js?v=20260928012023';
 
 const RING_CIRCUMFERENCE = 2 * Math.PI * 52;
 
@@ -16,7 +16,6 @@ const cards = {
 };
 const statusEl = document.getElementById('status');
 const refreshBtn = document.getElementById('refresh');
-const nextEl = document.getElementById('next');
 
 let times = null;
 
@@ -126,7 +125,6 @@ function updateNext() {
   cards.sunrise.classList.toggle('is-past', now > times.sunrise);
 
   const [name, time] = now < times.sunrise ? ['Sunrise', times.sunrise] : ['Sunset', times.sunset];
-  nextEl.hidden = false;
   document.getElementById('next-label').textContent = `Next · ${name}`;
   document.getElementById('next-countdown').textContent = formatCountdown(time - now);
 }

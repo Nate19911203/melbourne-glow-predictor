@@ -33,29 +33,56 @@ function setScore(card, score) {
   chip.dataset.rating = label.toLowerCase();
 }
 
-function renderFactors(card, local, horizon, horizonLabel, parts) {
-  const rows = [
-    ['Mid / high cloud', `${local.mid}% / ${local.high}%`, parts.canvas],
-    [`Low cloud, ${horizonLabel}`, `${horizon.low}%`, parts.horizon],
-    ['Visibility', `${(local.visibility / 1000).toFixed(0)} km`, parts.visibility],
-    ['Humidity', `${local.humidity}%`, parts.humidity],
-  ];
-  const list = field(card, 'factors');
-  list.innerHTML = rows.map(([name, value]) => `
-    <li>
-      <div class="factor-top">
-        <span class="factor-name">${name}</span>
-        <span class="factor-value">${value}</span>
-      </div>
-      <div class="factor-bar"><span></span></div>
-    </li>`).join('');
+function quality(part) {
+  if (part >= 0.7) return 'good';
+  if (part >= 0.4) return 'ok';
+  return 'bad';
+}
 
-  // Set widths on the next frame so the bars animate in.
-  requestAnimationFrame(() => {
-    list.querySelectorAll('.factor-bar span').forEach((bar, i) => {
-      bar.style.width = `${Math.round(rows[i][2] * 100)}%`;
-    });
-  });
+function renderFactors(card, local, horizon, horizonLabel, { parts, cover }) {
+  const km = local.visibility / 1000;
+  const rows = [
+    {
+      name: 'Mid / high cloud',
+      value: `${local.mid}% / ${local.high}%`,
+      verdict: cover < 30 ? 'Too thin' : cover > 70 ? 'Too thick' : 'In the sweet spot',
+      q: quality(parts.canvas),
+    },
+    {
+      name: `Low cloud, ${horizonLabel}`,
+      value: `${horizon.low}%`,
+      verdict: horizon.low < 20 ? 'Clear horizon' : horizon.low < 50 ? 'Patchy' : 'Blocked',
+      q: quality(parts.horizon),
+    },
+    {
+      name: 'Visibility',
+      value: `${km.toFixed(0)} km`,
+      verdict: km >= 20 ? 'Crisp' : km >= 10 ? 'Fair' : 'Hazy',
+      q: quality(parts.visibility),
+    },
+    {
+      name: 'Humidity',
+      value: `${local.humidity}%`,
+      verdict: local.humidity <= 60 ? 'Dry' : local.humidity <= 80 ? 'Moderate' : 'Humid',
+      q: quality(parts.humidity),
+    },
+  ];
+
+  // Mid/high cloud is best in the middle, so it gets a range bar with the 30–70% sweet spot shaded.
+  const range = `
+    <div class="range" aria-hidden="true">
+      <span class="range-zone"></span>
+      <span class="range-marker" style="left: ${Math.round(cover)}%"></span>
+    </div>
+    <div class="range-scale" aria-hidden="true"><span>0%</span><span>sweet spot</span><span>100%</span></div>`;
+
+  field(card, 'factors').innerHTML = rows.map((r, i) => `
+    <li class="factor">
+      <span class="factor-name">${r.name}</span>
+      <span class="factor-value">${r.value}</span>
+      <span class="factor-verdict" data-q="${r.q}">${r.verdict}</span>
+      ${i === 0 ? range : ''}
+    </li>`).join('');
 }
 
 function renderEvent(card, { time, local, horizon, horizonLabel }) {
@@ -70,7 +97,7 @@ function renderEvent(card, { time, local, horizon, horizonLabel }) {
   const result = glowScore(local, horizon);
   setScore(card, result.score);
   field(card, 'summary').textContent = describe(result);
-  renderFactors(card, local, horizon, horizonLabel, result.parts);
+  renderFactors(card, local, horizon, horizonLabel, result);
 }
 
 function formatCountdown(ms) {

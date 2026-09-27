@@ -13,10 +13,30 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <script>
+    // iPadOS home-screen apps launched in landscape first lay the page out at portrait
+    // width, then correct it a moment later, so the content starts off-centre. In that
+    // case, keep the content hidden until the real width arrives, then fade it in.
+    (function () {
+      var landscape = Math.abs(window.orientation) === 90;
+      if (!navigator.standalone || !landscape || innerWidth > innerHeight) return;
+      var root = document.documentElement;
+      root.classList.add('settling');
+      function done() {
+        root.classList.remove('settling');
+        removeEventListener('resize', check);
+      }
+      function check() {
+        if (innerWidth > innerHeight) done();
+      }
+      addEventListener('resize', check);
+      setTimeout(done, 1000); // never stay hidden if the resize doesn't come
+    })();
+  </script>
   <link rel="preconnect" href="https://api.open-meteo.com" crossorigin>
-  <link rel="modulepreload" href="src/api.js?v=20260928012023">
-  <link rel="modulepreload" href="src/score.js?v=20260928012023">
-  <link rel="stylesheet" href="style.css?v=20260928012023">
+  <link rel="modulepreload" href="src/api.js?v=20260928012724">
+  <link rel="modulepreload" href="src/score.js?v=20260928012724">
+  <link rel="stylesheet" href="style.css?v=20260928012724">
 </head>
 <body>
   <div class="sky" aria-hidden="true"></div>
@@ -167,6 +187,6 @@
   </main>
 
   <script src="src/vendor/suncalc.js"></script>
-  <script type="module" src="src/ui.js?v=20260928012023"></script>
+  <script type="module" src="src/ui.js?v=20260928012724"></script>
 </body>
 </html>

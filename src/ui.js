@@ -1,5 +1,5 @@
-import { MELBOURNE, TIMEZONE, fetchForecast, loadCachedForecast, hourKey } from './api.js?v=20260928012023';
-import { glowScore, describe, rating } from './score.js?v=20260928012023';
+import { MELBOURNE, TIMEZONE, fetchForecast, loadCachedForecast, hourKey } from './api.js?v=20260928012724';
+import { glowScore, describe, rating } from './score.js?v=20260928012724';
 
 const RING_CIRCUMFERENCE = 2 * Math.PI * 52;
 
